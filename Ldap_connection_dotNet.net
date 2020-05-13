@@ -1,0 +1,79 @@
+using Novell.Directory.Ldap;
+using System;
+
+namespace ConsoleApp4
+{
+    class Program
+    {
+        public void userList()
+        {
+            string ldapHost = "localhost";
+            int ldapPort = 10389;
+            string loginDN = "uid=admin,ou=system";
+            string password = "secret";
+            string searchBase = "ou=users,o=Company";
+            string searchFilter = "objectClass=inetOrgPerson";
+
+            try
+            {
+
+                LdapConnection conn = new LdapConnection();
+                Console.WriteLine("Connecting to " + ldapHost);
+                conn.Connect(ldapHost, ldapPort);
+                conn.Bind(loginDN, password);
+                string[] requiredAttributes = { "cn", "sn", "uid" };
+                LdapSearchResults lsc = conn.Search(searchBase,
+                                    LdapConnection.SCOPE_SUB,
+                                    searchFilter,
+                                    requiredAttributes,
+                                    false);
+                while(lsc.hasMore())
+                {
+                    LdapEntry nextEntry = null;
+                    try
+                    {
+                        nextEntry = lsc.next();
+
+                    }
+                    catch(LdapException e)
+                    {
+                        Console.WriteLine("Error : " + e.LdapErrorMessage);
+                        continue;
+                    }
+                    Console.WriteLine("\n"+ nextEntry.DN );
+                    LdapAttributeSet attributeSet = nextEntry.getAttributeSet();
+                    System.Collections.IEnumerator ienum = attributeSet.GetEnumerator();
+                    while(ienum.MoveNext())
+                    {
+                        LdapAttribute attribute = (LdapAttribute)ienum.Current;
+                        string attributeName = attribute.Name;
+                        string attributeVal = attribute.StringValue;
+                        Console.WriteLine("\t" + attributeName + "\tvalue  = \t" + attributeVal);
+                    }
+                }
+                conn.Disconnect();
+
+
+            }
+            catch(LdapException e)
+            {
+                Console.WriteLine("Error :" + e.LdapErrorMessage);
+                return;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error :" + e.Message);
+                return;
+            }
+            Console.WriteLine("Press any key ");
+            Console.ReadKey(true);
+        }
+
+
+        static void Main(string[] args)
+        {
+            Program programObj = new Program();
+            programObj.userList();
+        }
+    }
+}
